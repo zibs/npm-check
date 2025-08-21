@@ -1,0 +1,59 @@
+name: Prove composite npm behavior
+on:
+  workflow_dispatch:
+    inputs:
+      upgrade-npm:
+        description: npm version to install globally inside the composite (blank = skip)
+        required: false
+        default: '11.5.1'
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Caller explicitly sets a starting Node (to make differences obvious)
+      - name: Caller sets Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: BEFORE (caller shell)
+        id: before
+        run: |
+          echo "CALLER(before) node: $(node -v)"
+          echo "CALLER(before) npm:  $(npm -v)"
+          which npm || true
+          echo "npm_before=$(npm -v)" >> "$GITHUB_OUTPUT"
+
+      # Composite action that mimics Optic
+      - name: Run sandbox composite (mimics Optic)
+        uses: ./.github/workflows/checking
+        with:
+          upgrade-npm: '${{ github.event.inputs.upgrade-npm }}'
+
+      - name: AFTER (caller shell, same job)
+        id: after
+        run: |
+          echo "CALLER(after) node: $(node -v)"
+          echo "CALLER(after) npm:  $(npm -v)"
+          which npm || true
+          echo "npm_after=$(npm -v)" >> "$GITHUB_OUTPUT"
+
+      - name: Did npm change?
+        run: |
+          if [ "${{ steps.before.outputs.npm_before }}" != "${{ steps.after.outputs.npm_after }}" ]; then
+            echo "RESULT: npm CHANGED from ${{ steps.before.outputs.npm_before }} to ${{ steps.after.outputs.npm_after }}"
+          else
+            echo "RESULT: npm did NOT change"
+          fi
+
+  fresh_job:
+    runs-on: ubuntu-latest
+    needs: demo
+    steps:
+      - name: Fresh job proves no leakage across jobs
+        run: |
+          node -v
+          npm -v

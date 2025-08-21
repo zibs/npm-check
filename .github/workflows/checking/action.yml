@@ -1,0 +1,30 @@
+name: sandbox-optic-like
+description: Mimic Optic's Node setup + optional npm upgrade
+inputs:
+  upgrade-npm:
+    description: Set to a version like 11.5.1 to upgrade npm globally
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js (LTS), like Optic
+      uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+
+    - name: Show versions inside the composite (before upgrade)
+      shell: bash
+      run: |
+        echo "COMPOSITE(before) node: $(node -v)"
+        echo "COMPOSITE(before) npm:  $(npm -v)"
+        which npm || true
+
+    - name: Upgrade npm (if requested), like Optic's OIDC branch
+      if: ${{ inputs['upgrade-npm'] != '' && inputs['upgrade-npm'] != null }}
+      shell: bash
+      run: |
+        npm i -g npm@${{ inputs['upgrade-npm'] }}
+        hash -r || true
+        echo "COMPOSITE(after) node: $(node -v)"
+        echo "COMPOSITE(after) npm:  $(npm -v)"
+        which npm || true
