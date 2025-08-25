@@ -11,7 +11,7 @@ jobs:
   demo:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Caller explicitly sets a starting Node (to make differences obvious)
       - name: Caller sets Node 18
